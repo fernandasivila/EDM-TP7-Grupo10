@@ -28,12 +28,14 @@ public class Principal {
         CollectionCliente.precargarClientes();
         CollectionProducto.precargarProductos();
         CollectionStock.precargarStocks();
-        int opcion = 0; 
-        Cliente clienteAuxiliar;
-        Producto productoAuxiliar;
-        Stock stockAuxiliar;
-        TarjetaCredito tarjetaCreditoAuxiliar;
-        
+        int opcion = 0;
+        char opcionSN = 'y';
+        long codigoAuxiliar = 0;
+        Cliente clienteAuxiliar=null;
+        Producto productoAuxiliar=null;
+        Stock stockAuxiliar=null;
+        TarjetaCredito tarjetaCreditoAuxiliar=null;
+        boolean banderaOpcionCorrecta=true;
         int nroFactura = 1;
         do {
         	System.out.println("\n====== Menu Principal =====");
@@ -43,51 +45,162 @@ public class Principal {
             System.out.println("4- Consultar stock");
             System.out.println("5- Revisar creditos de un cliente (debe ingresar el DNI del cliente)");
             System.out.println("6- Salir");
-
-            System.out.println("Ingrese su opcion: ");
-            opcion = scanner.nextInt();
             
-            
+            do {
+            	try {
+            		System.out.println("Ingrese su opcion: ");
+                    opcion = scanner.nextInt();
+                    banderaOpcionCorrecta=true;
+            	}catch(InputMismatchException e) {
+            		scanner.next();
+    				System.out.println("[e] Entrada invalida. Vuelva a intentarlo.\n");
+    				banderaOpcionCorrecta=false;
+            	}
+            }while(!banderaOpcionCorrecta);
+            System.out.println();
             switch(opcion) {
             case 1:
-            	System.out.println("******REALIZAR UNA VENTA******");
-            	clienteAuxiliar=ingresarDNICliente(scanner);
-            	if(clienteAuxiliar==null)
-            		break;
-            	System.out.println("ABRIENDO NUEVA FACTURA...");
-            	Factura nuevaFactura = new Factura(LocalDate.now(),nroFactura,clienteAuxiliar,null);
-            	//nroFactura++; AÑADIR MÁS TARDE CUANDO SE CONFIRME LA FACTURA
-            	//PRODUCTOS
-            	boolean banderaProductoExiste;
-            	boolean banderaStockExiste;
-            	boolean banderaCantidadValida;
-            	List<Detalle> nuevoDetalles = new ArrayList<Detalle>();
+            	List<Detalle> carrito = new ArrayList<Detalle>();
             	do {
-            		banderaProductoExiste=true;
-            		System.out.print("Ingrese el código del producto: ");
-            		int nuevoCodigo = scanner.nextInt();
+            		System.out.println("******REALIZAR UNA VENTA******");
+            		System.out.println("1. Añadir productos al carrito.");
+            		System.out.println("2. Ver productos en carrito.");
+            		System.out.println("3. Borrar productos del carrito.");
+            		System.out.println("4. Generar factura.");
+            		System.out.println("5. Salir.");
+            		do {
+            			try{
+            				System.out.println("Ingrese su opción: ");
+            				opcion = scanner.nextInt();
+            				banderaOpcionCorrecta=true;
+            			}catch(InputMismatchException e) {
+            				scanner.next();
+            				System.out.println("[e] Entrada invalida. Vuelva a intentarlo.\n");
+            				banderaOpcionCorrecta=false;
+            			}
+            		}while(!banderaOpcionCorrecta);
             		System.out.println();
-            		//Implementar try-catch para validación de datos.
-            		Producto nuevoProducto = CollectionProducto.buscarProducto(nuevoCodigo); 
-            		if(nuevoProducto!=null) {
-            			Stock stockNuevoProducto = CollectionStock.buscarStock(nuevoProducto);
-            			if(stockNuevoProducto!=null) {
-            				System.out.print("Ingrese la cantidad: ");
-            				int nuevaCantidad = scanner.nextInt();
-            				if(stockNuevoProducto.getCantidad()>nuevaCantidad){
-            					System.out.println("No existe suficiente stock.");
+            		switch(opcion) {
+            		case 1:
+            			mostrarProductos();
+            			do {
+            				do {
+                				try{
+                					System.out.println("Ingrese el cod. del producto que desea añadir al carrito: ");
+                    				codigoAuxiliar = scanner.nextLong();
+                    				banderaOpcionCorrecta=true;
+                    			}catch(InputMismatchException e) {
+                    				scanner.next();
+                    				System.out.println("[e] Entrada invalida. Vuelva a intentarlo.\n");
+                    				banderaOpcionCorrecta=false;
+                    			}
+                			}while(!banderaOpcionCorrecta);
+            				productoAuxiliar = CollectionProducto.buscarProducto(codigoAuxiliar);
+            				if(productoAuxiliar == null) {
+            					System.out.println("El codigo ingresado no coincide con ningun producto de la lista. Desea intentar de vuelta? (s/n)");
+            					opcionSN = scanner.next().charAt(0);
+            					continue;
+            				}
+            				if(encontrarProductoCarrito(carrito,productoAuxiliar)) {
+            					System.out.println("[!] Este producto ya esta en el carrito y no se puede volver a ingresar. Desea intentar de vuelta? (s/n)");
+        						opcionSN = scanner.next().charAt(0);
+        						continue;
+            				}
+            				stockAuxiliar = CollectionStock.buscarStock(productoAuxiliar);
+            				System.out.println("----------------------------------------------------------------------------------------------------------");
+            				System.out.printf("| %-4s | %-62s | %-9s | %-10s | %-5s | %n","COD","DESCRIPCIÓN","PRECIO U.","ORIGEN","STOCK");
+            				System.out.printf("| %4d | %-62s | %9.2f | %-10s | %5d | %n",productoAuxiliar.getCodigo(),productoAuxiliar.getDescripcion(),productoAuxiliar.getPrecioUnitario(),productoAuxiliar.getOrigenFabricacion(),stockAuxiliar.getCantidad());
+            				System.out.println("----------------------------------------------------------------------------------------------------------");
+            				if(stockAuxiliar.getCantidad()==0) {
+            					System.out.println("[!] Este producto no tiene stock disponible. Desea intentar de vuelta? (s/n)");
+        						opcionSN = scanner.next().charAt(0);
+        						continue;
+            				}
+            				int cantidadProducto=0;
+            				do {
+                				try{
+                					System.out.println("Ingrese cantidad a ordenar: ");
+                					cantidadProducto = scanner.nextInt();
+                    				banderaOpcionCorrecta=true;
+                    			}catch(InputMismatchException e) {
+                    				scanner.next();
+                    				System.out.println("[e] Entrada invalida. Vuelva a intentarlo.\n");
+                    				banderaOpcionCorrecta=false;
+                    			}
+                				if(cantidadProducto<1) {
+                					System.out.println("[!] Tiene que ingresar una cantidad mayor a 0. Intente de vuelta.");
+                					banderaOpcionCorrecta=false;
+                				}
+                				if(cantidadProducto>stockAuxiliar.getCantidad()) {
+                					System.out.println("[!] La cantidad no puede ser mayor al stock disponible. Intente de vuelta.");
+                					banderaOpcionCorrecta=false;
+                				}
+                			}while(!banderaOpcionCorrecta);
+            				Detalle nuevoDetalle = new Detalle(cantidadProducto,0,productoAuxiliar);
+            				carrito.add(nuevoDetalle);
+            				System.out.println("Producto añadido con exito! Mostrando detalles...");
+            				System.out.println(nuevoDetalle);
+            				System.out.println("¿Desea añadir otro producto al carrito? (s/n)");
+    						opcionSN = scanner.next().charAt(0);
+            			}while(opcionSN!='n');
+            			break;
+            		case 2:
+            			if(carrito.isEmpty()) {
+            				System.out.println("El carrito esta vacío");
+            				break;
+            			}
+            			double totalCarrito = 0;
+            			for(Detalle detalle : carrito) {
+            				totalCarrito += detalle.getImporte();
+            			}
+            			System.out.println("------------------------------------------------------------------------------------------------------------");
+            			System.out.printf("| %-4s | %-62s | %-9s | %-5s | %-12s | %n","COD","DESCRIPCION","PRECIO U.","CANT.","IMPORTE");
+            			System.out.println("------------------------------------------------------------------------------------------------------------");
+            			for(Detalle detalle : carrito) {
+            				System.out.printf("| %-4d | %-62s | %9.2f | %5d | %12.2f | %n",detalle.getProducto().getCodigo(),detalle.getProducto().getDescripcion(),detalle.getProducto().getPrecioUnitario(),detalle.getCantidad(),detalle.getImporte());
+            			}
+            			System.out.println("------------------------------------------------------------------------------------------------------------");
+            			System.out.printf("%83s | %5s | %12.2f | %n"," ","TOTAL",totalCarrito);
+            			break;
+            		case 3:
+            			System.out.println("------------------------------------------------------------------------------------------------------------");
+            			System.out.printf("| %-4s | %-62s | %-9s | %-5s | %-12s | %n","COD","DESCRIPCION","PRECIO U.","CANT.","IMPORTE");
+            			System.out.println("------------------------------------------------------------------------------------------------------------");
+            			for(Detalle detalle : carrito) {
+            				System.out.printf("| %-4d | %-62s | %9.2f | %5d | %12.2f | %n",detalle.getProducto().getCodigo(),detalle.getProducto().getDescripcion(),detalle.getProducto().getPrecioUnitario(),detalle.getCantidad(),detalle.getImporte());
+            			}
+            			System.out.println("------------------------------------------------------------------------------------------------------------");
+            			do {
+            				try{
+            					System.out.println("Ingrese cod. de producto a eliminar: ");
+            					codigoAuxiliar = scanner.nextInt();
+            					productoAuxiliar=CollectionProducto.buscarProducto(codigoAuxiliar);
+                				banderaOpcionCorrecta=true;
+                			}catch(InputMismatchException e) {
+                				scanner.next();
+                				System.out.println("[e] Entrada invalida. Vuelva a intentarlo.");
+                				banderaOpcionCorrecta=false;
+                			}
+            				if(productoAuxiliar==null) {
+            					System.out.println("[!] No existe dicho producto. Vuelva a intentarlo.");
+            					banderaOpcionCorrecta=false;
+            				}
+            			}while(!banderaOpcionCorrecta);
+            			boolean productoEncontrado=false;
+            			for(int i=0;i<carrito.size();i++) {
+            				if(carrito.get(i).getProducto()==productoAuxiliar) {
+            					carrito.remove(i);
+            					productoEncontrado=true;
+            					System.out.println("Producto removido con exito.");
+            					break;
             				}
             			}
-            			else {
-            				banderaProductoExiste=false;
-            				System.out.println("[!] No existe producto cuyo codigo coincida con el ingresado. Intente de vuelta.");
+            			if(!productoEncontrado) {
+            				System.out.println("[!] No se ha encontrado el producto en el carrito");
             			}
             		}
-            		
-            	}while(!banderaProductoExiste);
-            	//FACTURA
-            	
-            	//CREDITO
+            		System.out.println();
+            	}while(opcion!=4);
             	break;
             case 2:
             	System.out.println("***CONSULTAR COMPRAS DE UN CLIENTE***");
@@ -98,34 +211,24 @@ public class Principal {
             	break;
             case 3:
             	System.out.println("***LISTA DE PRODUCTOS DISPONIBLES***");
-            	//String[] = "1111";
-				System.out.println();
-            	for(Producto producto : CollectionProducto.productos) {
-            		System.out.println(producto);
-            	}
+            	mostrarProductos();
             	break;
             case 4:
             	System.out.println("******CONSULTA DE STOCK******");
-            	
-            	boolean ingresoOK=true;
-            	long codigoProductoConsultar = 0;
-            	
-        		while(!ingresoOK){
+        		do{
         			try{
-        				ingresoOK=true;
+        				banderaOpcionCorrecta=true;
         				System.out.print("Ingrese el código del producto: ");
-        				codigoProductoConsultar = scanner.nextLong();
+        				codigoAuxiliar = scanner.nextLong();
         				System.out.println();
         			}
         			catch(InputMismatchException e){
         				System.out.println("[e] Entrada invalida.");
         				scanner.next();
-        				ingresoOK=false;
+        				banderaOpcionCorrecta=false;
         			}
-        		}
-        		
-        		productoAuxiliar = CollectionProducto.buscarProducto(codigoProductoConsultar);
-            	
+        		}while(!banderaOpcionCorrecta);
+        		productoAuxiliar = CollectionProducto.buscarProducto(codigoAuxiliar);
         		if( productoAuxiliar != null) {
             		
             		System.out.println("******VERIFICANDO...******");
@@ -163,6 +266,7 @@ public class Principal {
             case 6:
             	System.out.println("[*] Fin del Programa");
             }
+            System.out.println();
         }while(opcion != 6);
         scanner.close();
 
@@ -202,5 +306,22 @@ public class Principal {
     		System.out.println("No se han encontrado compras bajo el nombre de este usuario.");
     	}
     	return;
+	}
+	static boolean encontrarProductoCarrito(List<Detalle> carrito,Producto productoAuxiliar) {
+		for(Detalle detalle : carrito) {
+			if(detalle.getProducto()==productoAuxiliar) {
+				return true;
+			}
+		}
+		return false;
+	}
+	static void mostrarProductos() {
+ 			System.out.println("--------------------------------------------------------------------------------------------------");
+ 			System.out.printf("| %-4s | %-62s | %-9s | %-10s | %n","COD","DESCRIPCIÓN","PRECIO U.","ORIGEN");
+ 			System.out.println("--------------------------------------------------------------------------------------------------");
+ 			for(Producto producto : CollectionProducto.productos) {
+ 				System.out.printf("| %4d | %-62s | %9.2f | %-10s | %n",producto.getCodigo(),producto.getDescripcion(),producto.getPrecioUnitario(),producto.getOrigenFabricacion());
+ 			}
+ 			System.out.println("--------------------------------------------------------------------------------------------------");
 	}
 }
