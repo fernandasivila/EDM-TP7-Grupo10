@@ -1,7 +1,5 @@
 package ar.edu.unju.escmi.poo.tests;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.junit.jupiter.api.Assertions;
 
 import ar.edu.unju.escmi.poo.collections.CollectionStock;
@@ -22,7 +20,7 @@ class StockTest {
 		CollectionStock.agregarStock(stockAux);
 		CollectionStock.reducirStock(stockAux, reduccion);
 		
-		int cantidadReducida = CollectionStock.buscarStock(producto).getCantidad() - 2;
+		int cantidadReducida = CollectionStock.buscarStock(producto).getCantidad();
 		int expected = cantidadProducto - reduccion;
 		
 		Assertions.assertEquals(expected, cantidadReducida, "El decremento del stock del producto deberia coincidir con la cantidad indicada");
