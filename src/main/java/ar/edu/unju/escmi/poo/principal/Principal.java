@@ -156,7 +156,7 @@ public class Principal {
             		
         		}
         		else {
-        			System.out.println("[!] No existe producto que coincida con el codigo ingresado.");
+        			System.out.println("[!] No se encontraron los creditos correspondientess.");
         		}
         		
             	break;
